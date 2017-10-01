@@ -9,6 +9,8 @@ var container,
 var points = [];
 var lines  = [];
 var polygons = [];
+var projector;
+var dragControls;
 	
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -79,7 +81,19 @@ function init() {
 	
 	}, true);
 	
-	
+	projector = new THREE.Projector();
+	dragControls = new THREE.DragControls( polygons, camera, renderer.domElement );
+	dragControls.addEventListener( 'dragstart', onMouseDragStart);
+
+  dragControls.addEventListener( 'dragend',onMouseDragEnd);
+}
+
+function onMouseDragStart(){
+	//console.log("start");
+}
+
+function onMouseDragEnd(){
+	//console.log("dragend");
 }
 
 function getCoordinates(event){
@@ -153,28 +167,53 @@ function intercepta_segmentos_anteriores(){
 }
 
 function onMouseClick(event){
+
 	
-	var point = getCoordinates(event);
-	
-	points.push(point);
-	
-	if(points.length >1){
-		
-		if(points.length >3 && (distance(points[0],points[points.length - 1])<15 || intercepta_segmentos_anteriores())){
-			
-			lines.forEach(function(line) {
-				scene.remove(line);
-			});
-			
-			draw_polygon();
-			points.length = 0;	
-	
-		} else{
-			
-			draw_line();
-			
+	var raycaster = new THREE.Raycaster();
+	var vector = new THREE.Vector2(( event.clientX / window.innerWidth ) * 2 - 1, 
+		- ( event.clientY / window.innerHeight ) * 2 + 1);
+	raycaster.setFromCamera( vector, camera );
+	var intersects = raycaster.intersectObjects( polygons );
+
+	if(intersects.length == 1){
+
+		pregarUnicoPoligono(intersects[0].object, intersects[0].point);
+	}
+
+	if(intersects.length >= 2){
+		pregarDoisPoligonos(intersects[intersects.length - 1].object,intersects[intersects.length - 2].object,intersects[0].point);
+	}
+
+	else if(intersects.length === 0){
+		var point = getCoordinates(event);
+		var pontoJaMapeado = false;
+		for(var i =0; i<points.length; i++){
+			if(points[i].x === point.x && points[i].y === point.y){
+				pontoJaMapeado = true;
+			}
 		}
-	
+
+		if(!pontoJaMapeado){
+			points.push(point);
+			if(points.length >1){
+				
+				if(points.length >3 && (distance(points[0],points[points.length - 1])<15 || intercepta_segmentos_anteriores())){
+					
+					lines.forEach(function(line) {
+						scene.remove(line);
+					});
+					
+					draw_polygon();
+					points.length = 0;	
+
+				} else{
+					
+					draw_line();
+					
+				}
+
+			}
+		}
 	}	
 	
 }
@@ -211,10 +250,52 @@ function draw_polygon(){
 			var redMat = new THREE.MeshBasicMaterial({color: color});
 			var polygon = new THREE.Mesh(geometry, redMat);
 
+			polygon.pregosNaTela = [];
+
+			polygon.pregosEmOutroPoligonos = [];
+
 			polygons.push(polygon);
 			
 			scene.add(polygon);
 		
+}
+
+function pregarDoisPoligonos(poligonoPai, poligonoFilho, ponto){
+
+	var geometry = new THREE.SphereGeometry(10, 0, 0);
+	var material = new THREE.MeshBasicMaterial({
+		color: 0x0000ff
+	});
+	prego = new THREE.Mesh(geometry, material);
+
+	prego.position.set(ponto.x, ponto.y, -2);
+
+	poligonoPai.children.push(poligonoFilho);
+	poligonoFilho.parent = poligonoPai;
+
+	scene.add(prego);
+
+}
+
+function pregarUnicoPoligono(poligono, ponto){
+
+
+	var geometry = new THREE.SphereGeometry(10, 0, 0);
+	var material = new THREE.MeshBasicMaterial({
+		color: 0x0000ff
+	});
+	prego = new THREE.Mesh(geometry, material);
+
+	prego.position.set(ponto.x, ponto.y, -2);
+
+	//console.log(poligono);
+
+	poligono.pregosNaTela.push(prego);
+
+
+
+	scene.add(prego);
+
 }
 
 // Follows the mouse event
