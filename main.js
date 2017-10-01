@@ -65,7 +65,7 @@ function init() {
 	// When the mouse moves, call the given function
 	document.addEventListener('mousemove', onMouseMove, false);
 	document.addEventListener('click', onMouseClick, false);
-	document.addEventListener("touchstart", onMouseClick, false); 
+	//document.addEventListener("touchstart", onMouseClick, false); 
 	
 	container.addEventListener('resize', function(){
 		
