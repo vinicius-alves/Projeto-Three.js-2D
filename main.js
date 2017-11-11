@@ -61,6 +61,8 @@ function init() {
 	document.addEventListener('mousemove', onMouseMove, false);
 	document.addEventListener('click', onMouseClick, false);
 	//document.addEventListener("touchstart", onMouseClick, false); 
+
+	adicionarObjeto();
 	
 	container.addEventListener('resize', function(){
 		
@@ -78,6 +80,37 @@ function init() {
 	}, true);
 	
 	projector = new THREE.Projector();
+
+}
+
+function adicionarObjeto(){
+
+	// instantiate a loader
+	var loader = new THREE.OBJLoader();
+
+	// load a resource
+	loader.load(
+		// resource URL
+		'MoodyOBJ.obj',
+		// called when resource is loaded
+		function ( object ) {
+
+			scene.add( object );
+
+		},
+		// called when loading is in progresses
+		function ( xhr ) {
+
+			console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+
+		},
+		// called when loading has errors
+		function ( error ) {
+
+			console.log( 'An error happened' );
+
+		}
+	);
 
 }
 
