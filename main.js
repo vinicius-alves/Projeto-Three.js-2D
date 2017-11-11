@@ -88,29 +88,35 @@ function adicionarObjeto(){
 	// instantiate a loader
 	var loader = new THREE.OBJLoader();
 
-	// load a resource
-	loader.load(
-		// resource URL
-		'MoodyOBJ.obj',
-		// called when resource is loaded
-		function ( object ) {
+	var mtlLoader = new THREE.MTLLoader();
 
-			scene.add( object );
-
-		},
-		// called when loading is in progresses
-		function ( xhr ) {
-
-			console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
-
-		},
-		// called when loading has errors
-		function ( error ) {
-
-			console.log( 'An error happened' );
-
+	var onProgress = function ( xhr ) {
+		if ( xhr.lengthComputable ) {
+			var percentComplete = xhr.loaded / xhr.total * 100;
+			console.log( Math.round(percentComplete, 2) + '% downloaded' );
 		}
-	);
+	};
+
+	var onError = function(xhr){
+		console.log( 'An error happened' );
+		console.log( xhr );
+	}
+	
+	mtlLoader.setPath( 'https://raw.githubusercontent.com/vinicius-alves/Projeto-Three.js-2D/master/model/' );
+	mtlLoader.load( 'earth.mtl', function( materials ) {
+
+	materials.preload();
+
+	var objLoader = new THREE.OBJLoader();
+	objLoader.setMaterials( materials );
+	objLoader.setPath( 'https://raw.githubusercontent.com/vinicius-alves/Projeto-Three.js-2D/master/model/' );
+	objLoader.load( 'earth.obj', function ( object ) {
+
+						scene.add( object );
+
+					}, onProgress, onError );
+
+		});
 
 }
 
