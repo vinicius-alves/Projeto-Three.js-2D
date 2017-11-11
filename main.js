@@ -101,7 +101,7 @@ function adicionarObjeto(){
 		console.log( 'An error happened' );
 		console.log( xhr );
 	}
-	
+
 	mtlLoader.setPath( 'https://raw.githubusercontent.com/vinicius-alves/Projeto-Three.js-2D/master/model/' );
 	mtlLoader.load( 'earth.mtl', function( materials ) {
 
