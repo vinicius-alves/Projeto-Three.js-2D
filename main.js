@@ -21,13 +21,16 @@ function init() {
 	scene = new THREE.Scene();
 
 	// Camera
-	var nearDistance = 0.1,
-		farDistance = 1000;
+	var nearDistance = 1,
+		farDistance = 2000;
 		
-	camera = new THREE.OrthographicCamera( WIDTH / - 2, WIDTH / 2, HEIGHT / 2, HEIGHT / - 2, nearDistance, farDistance );
+	camera = new THREE.PerspectiveCamera( 45, WIDTH / HEIGHT, nearDistance, farDistance );
+	console.log(camera);
+	camera.position.z = 2000;
+	camera.position.x = 50;
 	scene.add( camera );
-	camera.position.set(0, 0, 5);
-	camera.lookAt(scene.position);
+	//camera.position.set(0, 0, 5);
+	//camera.lookAt(scene.position);
 
 	// Renderer engine together with the background
 	renderer = new THREE.WebGLRenderer({
@@ -49,7 +52,7 @@ function init() {
 
 	// Create a circle around the mouse and move it
 	// The sphere has opacity 0
-	var mouseGeometry = new THREE.SphereGeometry(10, 0, 0);
+	var mouseGeometry = new THREE.SphereGeometry(1, 0, 0);
 	var mouseMaterial = new THREE.MeshBasicMaterial({
 		color: 0x0000ff
 	});
@@ -74,7 +77,6 @@ function init() {
 		camera.aspect = WIDTH / HEIGHT;
 		camera.updateProjectionMatrix();
 		
-
 		renderer.setSize( WIDTH, HEIGHT );	
 	
 	}, true);
@@ -85,10 +87,11 @@ function init() {
 
 function adicionarObjeto(){
 
-	// instantiate a loader
-	var loader = new THREE.OBJLoader();
 
+	var objLoader = new THREE.OBJLoader();
 	var mtlLoader = new THREE.MTLLoader();
+
+	var path = "model/";
 
 	var onProgress = function ( xhr ) {
 		if ( xhr.lengthComputable ) {
@@ -102,21 +105,19 @@ function adicionarObjeto(){
 		console.log( xhr );
 	}
 
-	mtlLoader.setPath( 'https://raw.githubusercontent.com/vinicius-alves/Projeto-Three.js-2D/master/model/' );
+	mtlLoader.setTexturePath( path );
+	mtlLoader.setPath( path );
 	mtlLoader.load( 'earth.mtl', function( materials ) {
 
-	materials.preload();
-
-	var objLoader = new THREE.OBJLoader();
-	objLoader.setMaterials( materials );
-	objLoader.setPath( 'https://raw.githubusercontent.com/vinicius-alves/Projeto-Three.js-2D/master/model/' );
-	objLoader.load( 'earth.obj', function ( object ) {
+		materials.preload();
+		objLoader.setMaterials( materials );
+		objLoader.setPath( path );
+		objLoader.load( 'earth.obj', function ( object ) {
 
 						scene.add( object );
 
 					}, onProgress, onError );
-
-		});
+	});
 
 }
 
@@ -171,8 +172,7 @@ function animate() {
 	
 // Rendering function
 function render() {
-
-	// For rendering
+	camera.lookAt( scene.position );
 	renderer.autoClear = false;
 	renderer.clear();
 	renderer.render(scene, camera);
