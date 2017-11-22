@@ -3,9 +3,9 @@ var container,
 	scene, 
 	camera,
 	renderer,
-	mouseMesh;
-	
-var projector;
+	mouseMesh,
+	projector,
+	planet;
 	
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -25,9 +25,8 @@ function init() {
 		farDistance = 2000;
 		
 	camera = new THREE.PerspectiveCamera( 45, WIDTH / HEIGHT, nearDistance, farDistance );
-	console.log(camera);
 	camera.position.z = 2000;
-	camera.position.x = 50;
+	camera.position.x = 0;
 	scene.add( camera );
 	//camera.position.set(0, 0, 5);
 	//camera.lookAt(scene.position);
@@ -43,10 +42,7 @@ function init() {
 	container.appendChild(renderer.domElement); 
 
 	// Define the lights for the scene
-	var light = new THREE.PointLight(0xffffff);
-	light.position.set(20, 0, 20);
-	scene.add(light);
-	var lightAmb = new THREE.AmbientLight(0x777777);
+	var lightAmb = new THREE.AmbientLight(0x404040,5);
 	scene.add(lightAmb);
 
 
@@ -113,8 +109,8 @@ function adicionarObjeto(){
 		objLoader.setMaterials( materials );
 		objLoader.setPath( path );
 		objLoader.load( 'earth.obj', function ( object ) {
-
-						scene.add( object );
+						planet = object;
+						scene.add( planet );
 
 					}, onProgress, onError );
 	});
@@ -151,7 +147,12 @@ function onMouseClick(event){
 	var vector = new THREE.Vector2(( event.clientX / window.innerWidth ) * 2 - 1, 
 		- ( event.clientY / window.innerHeight ) * 2 + 1);
 	raycaster.setFromCamera( vector, camera );
-	//var intersects = raycaster.intersectObjects( polygons );	
+	var intersect = raycaster.intersectObject(planet, true);	
+	console.log(intersect);
+
+	/*if(intersect.length >0){
+		alert("ok");
+	}*/
 	
 }
 
