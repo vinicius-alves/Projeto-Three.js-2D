@@ -5,7 +5,10 @@ var container,
 	renderer,
 	mouseMesh,
 	projector,
-	planet;
+	planet,
+	centro,
+	raio;
+
 	
 var WIDTH = window.innerWidth;
 var HEIGHT = window.innerHeight;
@@ -110,6 +113,10 @@ function adicionarObjeto(){
 		objLoader.setPath( path );
 		objLoader.load( 'earth.obj', function ( object ) {
 						planet = object;
+
+						centro = {"x":0 , "y":0, "z":0};
+						raio = 330,
+
 						scene.add( planet );
 
 					}, onProgress, onError );
@@ -117,14 +124,13 @@ function adicionarObjeto(){
 
 }
 
-function getCoordinates(event){
+function transformarParaCoordenadasMundo(coordX, coordY){
 	
-	mouse ={};
-	event.preventDefault();
-	mouse.x =  event.clientX - WIDTH/2; 
-	mouse.y = -(event.clientY - HEIGHT/2);
-	//console.log("(",mouse.x.toFixed(2), ",",mouse.y.toFixed(2),")");
-	return mouse;
+	point ={};
+	point.x = ( coordX/ WIDTH ) * 2 - 1;
+	point.y = - ( coordY / HEIGHT ) * 2 + 1;
+	
+	return point;
 }
 
 
@@ -139,31 +145,84 @@ function distance(first_point,second_point){
 	return Math.sqrt(horizontal_distance_square + vertical_distance_square);
 }
 
-
+var ultimoPontoClicado = {"x":null, "y":null};
 
 function onMouseClick(event){
 
-	var raycaster = new THREE.Raycaster();
-	var vector = new THREE.Vector2(( event.clientX / window.innerWidth ) * 2 - 1, 
-		- ( event.clientY / window.innerHeight ) * 2 + 1);
-	raycaster.setFromCamera( vector, camera );
-	var intersect = raycaster.intersectObject(planet, true);	
-	console.log(intersect);
-
-	/*if(intersect.length >0){
-		alert("ok");
-	}*/
+	ultimoPontoClicado.x = event.clientX;
+	ultimoPontoClicado.y = event.clientY;
 	
+}
+
+function obterPontoObj(coordX, coordY){
+
+	var raycaster = new THREE.Raycaster();
+	var vector = new THREE.Vector2(( coordX / WIDTH ) * 2 - 1, 
+		- ( coordY / HEIGHT ) * 2 + 1);
+	raycaster.setFromCamera( vector, camera );
+	var intersect = raycaster.intersectObject(planet, true);
+
+	if(intersect.length ==0){
+		
+		var point = transformarParaCoordenadasMundo(coordX, coordY);
+		r = (point.x-centro.x)*(point.x-centro.x) + (point.y-centro.y)*(point.y-centro.y);
+		r = Math.sqrt(r);
+
+		point.x = (point.x -centro.x)/r;
+		point.y = (point.y -centro.y)/r;
+		point.z = centro.z;
+
+		return point;
+	}
+
+	else{
+		return intersect[0].point;
+
+	}
+
 }
 
 
 // Follows the mouse event
 function onMouseMove(event) {
 
-  var mouse = getCoordinates(event);
+	if(event.buttons == 1){
+		//mouse esquerdo pressionado
+		var pontoInicial = Object.assign({}, ultimoPontoClicado); 
+		var pontoFinal = {"x": event.clientX, "y":event.clientY};
 
-	mouseMesh.position.set(mouse.x, mouse.y, 0);
+		rotacionarObjetoPressionado(pontoInicial,pontoFinal);
+
+		ultimoPontoClicado.x = event.clientX;
+		ultimoPontoClicado.y = event.clientY;
+	}
 };
+
+function rotacionarObjetoPressionado(pontoInicial,pontoFinal){
+
+	if(pontoInicial.x!== null){
+
+	var pontoInicial = obterPontoObj(pontoInicial.x, pontoInicial.y);
+	var pontoFinal   = obterPontoObj(pontoFinal.x, pontoFinal.y);
+
+	console.log("inicial",pontoInicial);
+	console.log("final",pontoFinal);
+
+	//falta abater do centro da esfera
+
+	var quaternionInicial = new THREE.Quaternion(pontoInicial.x -centro.x,pontoInicial.y -centro.y,pontoInicial.z-centro.z,0);
+	var quaternionFinal   = new THREE.Quaternion(pontoFinal.x -centro.x,pontoFinal.y -centro.y,pontoFinal.z -centro.z,0);
+	var quaternionRotacao = new THREE.Quaternion();
+
+	quaternionInicial.normalize();
+	quaternionFinal.normalize();
+
+	quaternionRotacao.multiplyQuaternions(quaternionFinal,quaternionInicial.conjugate());
+
+	planet.applyQuaternion( quaternionRotacao );
+
+	}
+}
 
 // Animate the elements
 function animate() {
