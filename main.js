@@ -62,6 +62,8 @@ function init() {
 	// When the mouse moves, call the given function
 	document.addEventListener('mousemove', onMouseMove, false);
 	document.addEventListener('click', onMouseClick, false);
+	document.addEventListener('mousewheel', onMouseWheel,false);
+	document.addEventListener("DOMMouseScroll", onMouseWheel, false);
 	//document.addEventListener("touchstart", onMouseClick, false); 
 
 	adicionarObjeto();
@@ -114,7 +116,9 @@ function adicionarObjeto(){
 		objLoader.load( 'earth.obj', function ( object ) {
 						planet = object;
 
-						centro = {"x":0 , "y":0, "z":0};
+						planet.position.set(0,0,0);
+
+						centro = {"x":0 , "y":0, "z":80};
 						raio = 330,
 
 						scene.add( planet );
@@ -127,8 +131,11 @@ function adicionarObjeto(){
 function transformarParaCoordenadasMundo(coordX, coordY){
 	
 	point ={};
-	point.x = ( coordX/ WIDTH ) * 2 - 1;
-	point.y = - ( coordY / HEIGHT ) * 2 + 1;
+
+	point.x = coordX - WIDTH/2; 
+	point.y = -(coordY - HEIGHT/2);
+	//point.x = (( coordX / WIDTH ) * 2 - 1)*WIDTH/2;
+	//point.y = (- ( coordY / HEIGHT ) * 2 + 1)*HEIGHT/2;
 	
 	return point;
 }
@@ -145,12 +152,14 @@ function distance(first_point,second_point){
 	return Math.sqrt(horizontal_distance_square + vertical_distance_square);
 }
 
-var ultimoPontoClicado = {"x":null, "y":null};
+var ultimoPontoClicado = {"x":0, "y":0};
 
 function onMouseClick(event){
 
-	ultimoPontoClicado.x = event.clientX;
-	ultimoPontoClicado.y = event.clientY;
+
+
+	//ultimoPontoClicado.x = event.clientX;
+	//ultimoPontoClicado.y = event.clientY;
 	
 }
 
@@ -164,18 +173,24 @@ function obterPontoObj(coordX, coordY){
 
 	if(intersect.length ==0){
 		
-		var point = transformarParaCoordenadasMundo(coordX, coordY);
-		r = (point.x-centro.x)*(point.x-centro.x) + (point.y-centro.y)*(point.y-centro.y);
-		r = Math.sqrt(r);
 
-		point.x = (point.x -centro.x)/r;
-		point.y = (point.y -centro.y)/r;
+		var point = transformarParaCoordenadasMundo(coordX, coordY);
+		//console.log("Fora",point);
+		r = (point.x-centro.x)*(point.x-centro.x) + (point.y-centro.y)*(point.y-centro.y) + centro.z*centro.z;
+
+		var normalizador = raio/(Math.sqrt(r));
+
+		point.x = (point.x -centro.x)*normalizador;
+		point.y = (point.y -centro.y)*normalizador;
 		point.z = centro.z;
+
+		//console.log("Proj",point);
 
 		return point;
 	}
 
 	else{
+		//console.log("dentro",intersect[0].point);
 		return intersect[0].point;
 
 	}
@@ -183,45 +198,104 @@ function obterPontoObj(coordX, coordY){
 }
 
 
+var movimentoContinuoLeft = false;
+var movimentoContinuoRight = false;
 // Follows the mouse event
 function onMouseMove(event) {
 
-	if(event.buttons == 1){
+
+
+	if(event.buttons == 1 && movimentoContinuoLeft){
 		//mouse esquerdo pressionado
+
 		var pontoInicial = Object.assign({}, ultimoPontoClicado); 
 		var pontoFinal = {"x": event.clientX, "y":event.clientY};
 
 		rotacionarObjetoPressionado(pontoInicial,pontoFinal);
+	} 
+
+	if(event.buttons == 2 && movimentoContinuoRight){
+		//mouse esquerdo pressionado
+
+		var pontoInicial = Object.assign({}, ultimoPontoClicado); 
+		var pontoFinal = {"x": event.clientX, "y":event.clientY};
+
+		moverObjetoPressionado(pontoInicial,pontoFinal);
+	} 
+
+	if(event.buttons > 0 ){
 
 		ultimoPontoClicado.x = event.clientX;
 		ultimoPontoClicado.y = event.clientY;
+
+		if(event.buttons == 1 ){
+			movimentoContinuoLeft = true;
+		}
+
+		else if(event.buttons == 2){
+			movimentoContinuoRight = true;
+		}
+
+	} else{
+
+		if(event.buttons == 1 ){
+			movimentoContinuoLeft = false;
+		}
+
+		else if(event.buttons == 2){
+			movimentoContinuoRight = false;
+		}
 	}
 };
+
+function onMouseWheel(event){
+
+	planet.position.z +=  event.deltaY;
+	centro.z += event.deltaY;
+}
 
 function rotacionarObjetoPressionado(pontoInicial,pontoFinal){
 
 	if(pontoInicial.x!== null){
 
-	var pontoInicial = obterPontoObj(pontoInicial.x, pontoInicial.y);
-	var pontoFinal   = obterPontoObj(pontoFinal.x, pontoFinal.y);
+		var pontoInicial = obterPontoObj(pontoInicial.x, pontoInicial.y);
+		var pontoFinal   = obterPontoObj(pontoFinal.x, pontoFinal.y);
 
-	console.log("inicial",pontoInicial);
-	console.log("final",pontoFinal);
+		var quaternionInicial = new THREE.Quaternion(pontoInicial.x -centro.x,pontoInicial.y -centro.y,pontoInicial.z-centro.z,0);
+		var quaternionFinal   = new THREE.Quaternion(pontoFinal.x -centro.x,pontoFinal.y -centro.y,pontoFinal.z -centro.z,0);
+		var quaternionRotacao = new THREE.Quaternion();
 
-	//falta abater do centro da esfera
+		quaternionInicial.normalize();
+		quaternionFinal.normalize();
 
-	var quaternionInicial = new THREE.Quaternion(pontoInicial.x -centro.x,pontoInicial.y -centro.y,pontoInicial.z-centro.z,0);
-	var quaternionFinal   = new THREE.Quaternion(pontoFinal.x -centro.x,pontoFinal.y -centro.y,pontoFinal.z -centro.z,0);
-	var quaternionRotacao = new THREE.Quaternion();
+		quaternionRotacao.multiplyQuaternions(quaternionFinal,quaternionInicial.conjugate());
 
-	quaternionInicial.normalize();
-	quaternionFinal.normalize();
+		planet.applyQuaternion( quaternionRotacao );
 
-	quaternionRotacao.multiplyQuaternions(quaternionFinal,quaternionInicial.conjugate());
-
-	planet.applyQuaternion( quaternionRotacao );
+		planet.updateMatrix();
 
 	}
+}
+
+function moverObjetoPressionado(pontoInicial,pontoFinal){
+
+	console.log("antes",planet.position);
+	pontoInicial = transformarParaCoordenadasMundo(pontoInicial.x,pontoInicial.y);
+	pontoFinal   = transformarParaCoordenadasMundo(pontoFinal.x,pontoFinal.y);
+
+	console.log("pontoInicial",pontoInicial);
+	console.log("pontoFinal",pontoFinal);
+
+	planet.position.x +=  pontoFinal.x - pontoInicial.x;
+	centro.x += pontoFinal.x - pontoInicial.x;
+
+	planet.position.y +=  pontoFinal.y - pontoInicial.y;
+	centro.y += pontoFinal.y - pontoInicial.y;
+
+
+	console.log("depois",planet.position);
+
+
 }
 
 // Animate the elements
